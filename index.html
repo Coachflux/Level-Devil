@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Level Devil</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Level Devil Mobile</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -11,75 +14,173 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             background: #1a1a2e;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        #gameWrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            font-family: 'Press Start 2P', cursive;
-            overflow: hidden;
+            background: #1a1a2e;
         }
 
-        #gameContainer {
-            position: relative;
-            box-shadow: 0 0 50px rgba(255, 0, 0, 0.3), 0 0 100px rgba(0, 0, 0, 0.5);
-            border: 3px solid #e94560;
-            border-radius: 4px;
-        }
-
-        canvas {
+        #gameCanvas {
             display: block;
             background: #16213e;
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
 
+        /* Touch Controls */
+        #touchControls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 140px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px 20px 20px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .touch-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 24px;
+            transition: all 0.1s;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .touch-btn:active, .touch-btn.pressed {
+            background: rgba(233, 69, 96, 0.4);
+            border-color: #e94560;
+            transform: scale(0.92);
+        }
+
+        .touch-btn.jump-btn {
+            width: 90px;
+            height: 90px;
+            background: rgba(82, 183, 136, 0.2);
+            border-color: rgba(82, 183, 136, 0.5);
+            font-size: 18px;
+        }
+
+        .touch-btn.jump-btn:active, .touch-btn.jump-btn.pressed {
+            background: rgba(82, 183, 136, 0.5);
+            border-color: #52b788;
+        }
+
+        /* UI Overlay */
         #ui {
             position: absolute;
             top: 10px;
             left: 10px;
             color: #fff;
-            font-size: 12px;
+            font-size: 10px;
             text-shadow: 2px 2px 0 #000;
             pointer-events: none;
             z-index: 10;
+            line-height: 1.8;
         }
 
         #ui .deaths {
             color: #e94560;
-            margin-top: 5px;
         }
 
-        #message {
+        /* Message Overlay */
+        #messageOverlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            text-align: center;
-            pointer-events: none;
-            z-index: 20;
-            text-shadow: 3px 3px 0 #000;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
-        #message h1 {
-            font-size: 28px;
+        #messageContent {
+            text-align: center;
+            padding: 30px 20px;
+            max-width: 90%;
+        }
+
+        #messageContent h1 {
+            font-size: 22px;
             color: #e94560;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            text-shadow: 3px 3px 0 #000;
             animation: pulse 1.5s infinite;
         }
 
-        #message p {
-            font-size: 12px;
+        #messageContent p {
+            font-size: 10px;
             color: #aaa;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            line-height: 1.6;
         }
 
-        #message .blink {
+        #messageContent .blink {
             animation: blink 1s infinite;
             color: #fff;
+            margin-top: 16px;
+            font-size: 12px;
+        }
+
+        .start-btn {
+            display: inline-block;
             margin-top: 20px;
+            padding: 14px 32px;
+            background: #e94560;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            pointer-events: auto;
+            animation: pulse 1.5s infinite;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+            background: #ff6b6b;
         }
 
         @keyframes pulse {
@@ -93,31 +194,144 @@
         }
 
         .hidden { display: none !important; }
+
+        /* Fullscreen toggle */
+        #fullscreenBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 60;
+            pointer-events: auto;
+        }
+
+        #fullscreenBtn:active {
+            background: rgba(233, 69, 96, 0.3);
+        }
+
+        /* Orientation warning */
+        #orientationWarning {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a2e;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #orientationWarning p {
+            color: #e94560;
+            font-size: 14px;
+            line-height: 2;
+        }
+
+        @media (orientation: portrait) and (max-width: 600px) {
+            #orientationWarning {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="480"></canvas>
+    <div id="orientationWarning">
+        <p>Please rotate your device<br>to landscape mode<br>for the best experience</p>
+    </div>
+
+    <div id="gameWrapper">
+        <canvas id="gameCanvas"></canvas>
+
         <div id="ui">
             <div>LEVEL: <span id="levelNum">1</span>/8</div>
             <div class="deaths">DEATHS: <span id="deathCount">0</span></div>
         </div>
-        <div id="message">
-            <h1>LEVEL DEVIL</h1>
-            <p>Arrow Keys / WASD to Move & Jump</p>
-            <p>Reach the DOOR to escape...</p>
-            <p class="blink">PRESS SPACE TO START</p>
+
+        <button id="fullscreenBtn">⛶</button>
+
+        <div id="touchControls" class="hidden">
+            <div class="control-group">
+                <div class="touch-btn" data-key="ArrowLeft">◄</div>
+                <div class="touch-btn" data-key="ArrowRight">►</div>
+            </div>
+            <div class="control-group">
+                <div class="touch-btn jump-btn" data-key="Space">JUMP</div>
+            </div>
+        </div>
+
+        <div id="messageOverlay">
+            <div id="messageContent">
+                <h1>LEVEL DEVIL</h1>
+                <p>Touch controls or keyboard</p>
+                <p>Reach the DOOR to escape...</p>
+                <button class="start-btn" id="startBtn">TAP TO START</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // ==================== SETUP ====================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const msgEl = document.getElementById('message');
+        const msgOverlay = document.getElementById('messageOverlay');
+        const msgContent = document.getElementById('messageContent');
         const levelEl = document.getElementById('levelNum');
         const deathEl = document.getElementById('deathCount');
+        const touchControls = document.getElementById('touchControls');
+        const startBtn = document.getElementById('startBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-        // Audio context for sound effects
+        // Responsive canvas sizing
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 480;
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('gameWrapper');
+            const aspect = GAME_WIDTH / GAME_HEIGHT;
+            const wrapperAspect = wrapper.clientWidth / wrapper.clientHeight;
+
+            let w, h;
+            if (wrapperAspect > aspect) {
+                h = wrapper.clientHeight;
+                w = h * aspect;
+            } else {
+                w = wrapper.clientWidth;
+                h = w / aspect;
+            }
+
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Fullscreen
+        fullscreenBtn.addEventListener('click', () => {
+            const el = document.documentElement;
+            if (!document.fullscreenElement) {
+                el.requestFullscreen?.() || el.webkitRequestFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            }
+        });
+
+        // Audio
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
 
@@ -163,52 +377,83 @@
                 osc.start(now);
                 osc.stop(now + 0.15);
             }
+
+            // Haptic feedback
+            if (navigator.vibrate) navigator.vibrate(type === 'die' ? [50, 30, 50] : 15);
         }
 
-        // Game state
-        let gameState = 'menu'; // menu, playing, dead, levelComplete, gameComplete
-        let currentLevel = 0;
-        let deaths = 0;
-        let frameCount = 0;
-
-        // Input
+        // ==================== INPUT ====================
         const keys = {};
+
+        // Keyboard
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
-            if (gameState === 'menu' && e.code === 'Space') {
-                startGame();
-            } else if (gameState === 'dead' && e.code === 'Space') {
-                restartLevel();
-            } else if (gameState === 'levelComplete' && e.code === 'Space') {
-                nextLevel();
-            } else if (gameState === 'gameComplete' && e.code === 'Space') {
-                resetGame();
-            }
+            handleAction(e.code);
         });
         document.addEventListener('keyup', (e) => {
             keys[e.code] = false;
         });
 
-        // Camera
-        let camera = { x: 0, y: 0 };
+        // Touch controls
+        const touchBtns = document.querySelectorAll('.touch-btn');
+        touchBtns.forEach(btn => {
+            const key = btn.dataset.key;
 
-        // Particles
-        let particles = [];
+            const start = (e) => {
+                e.preventDefault();
+                keys[key] = true;
+                btn.classList.add('pressed');
+                handleAction(key);
+            };
+            const end = (e) => {
+                e.preventDefault();
+                keys[key] = false;
+                btn.classList.remove('pressed');
+            };
 
-        function createParticles(x, y, color, count = 8) {
-            for (let i = 0; i < count; i++) {
-                particles.push({
-                    x, y,
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.5) * 6,
-                    life: 1,
-                    color,
-                    size: Math.random() * 4 + 2
-                });
+            btn.addEventListener('touchstart', start, {passive: false});
+            btn.addEventListener('touchend', end, {passive: false});
+            btn.addEventListener('touchcancel', end, {passive: false});
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        });
+
+        function handleAction(code) {
+            if (gameState === 'menu' && (code === 'Space' || code === 'Enter')) {
+                startGame();
+            } else if (gameState === 'dead' && (code === 'Space' || code === 'Enter')) {
+                restartLevel();
+            } else if (gameState === 'levelComplete' && (code === 'Space' || code === 'Enter')) {
+                nextLevel();
+            } else if (gameState === 'gameComplete' && (code === 'Space' || code === 'Enter')) {
+                resetGame();
             }
         }
 
-        // Player
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            startGame();
+        });
+        startBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startGame();
+        }, {passive: false});
+
+        // Prevent default touch behaviors
+        document.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+
+        // ==================== GAME STATE ====================
+        let gameState = 'menu';
+        let currentLevel = 0;
+        let deaths = 0;
+        let frameCount = 0;
+        let camera = { x: 0, y: 0 };
+        let particles = [];
+
         let player = {
             x: 50, y: 300,
             width: 24, height: 24,
@@ -221,9 +466,9 @@
             respawnX: 50, respawnY: 300
         };
 
-        // Level data
         const TILE = 32;
 
+        // ==================== LEVELS ====================
         function createLevel(data) {
             const platforms = [];
             const spikes = [];
@@ -263,7 +508,6 @@
         }
 
         const levelData = [
-            // Level 1: The Basics (with a twist)
             {
                 map: [
                     "####################",
@@ -283,7 +527,6 @@
                     "####################"
                 ]
             },
-            // Level 2: Trust Issues
             {
                 map: [
                     "########################",
@@ -303,7 +546,6 @@
                     "########################"
                 ]
             },
-            // Level 3: Falling Faith
             {
                 map: [
                     "########################",
@@ -323,7 +565,6 @@
                     "########################"
                 ]
             },
-            // Level 4: Moving Targets
             {
                 map: [
                     "########################",
@@ -343,7 +584,6 @@
                     "########################"
                 ]
             },
-            // Level 5: The Trap
             {
                 map: [
                     "########################",
@@ -363,7 +603,6 @@
                     "########################"
                 ]
             },
-            // Level 6: Leap of Faith
             {
                 map: [
                     "################################",
@@ -383,7 +622,6 @@
                     "################################"
                 ]
             },
-            // Level 7: Devil's Gauntlet
             {
                 map: [
                     "####################################",
@@ -403,7 +641,6 @@
                     "####################################"
                 ]
             },
-            // Level 8: The Final Devil
             {
                 map: [
                     "########################################",
@@ -428,10 +665,13 @@
         let levels = levelData.map(createLevel);
         let currentLevelData = levels[0];
 
+        // ==================== GAME FUNCTIONS ====================
         function startGame() {
             gameState = 'playing';
-            msgEl.classList.add('hidden');
+            msgOverlay.classList.add('hidden');
+            touchControls.classList.remove('hidden');
             resetPlayer();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             gameLoop();
         }
 
@@ -446,9 +686,8 @@
 
         function restartLevel() {
             gameState = 'playing';
-            msgEl.classList.add('hidden');
+            msgOverlay.classList.add('hidden');
             resetPlayer();
-            // Reset level elements
             currentLevelData = levels[currentLevel];
             currentLevelData.fakePlatforms.forEach(p => { p.revealed = false; p.timer = 0; });
             currentLevelData.fallingPlatforms.forEach(p => { p.falling = false; p.vy = 0; p.y = p.originalY; });
@@ -460,14 +699,15 @@
             currentLevel++;
             if (currentLevel >= levels.length) {
                 gameState = 'gameComplete';
-                msgEl.innerHTML = '<h1>YOU ESCAPED!</h1><p>You conquered the devil.</p><p class="blink">PRESS SPACE TO PLAY AGAIN</p>';
-                msgEl.classList.remove('hidden');
+                msgContent.innerHTML = '<h1>YOU ESCAPED!</h1><p>You conquered the devil.</p><p class="blink">TAP TO PLAY AGAIN</p>';
+                msgOverlay.classList.remove('hidden');
+                touchControls.classList.add('hidden');
                 return;
             }
             currentLevelData = levels[currentLevel];
             levelEl.textContent = currentLevel + 1;
             gameState = 'playing';
-            msgEl.classList.add('hidden');
+            msgOverlay.classList.add('hidden');
             resetPlayer();
         }
 
@@ -479,8 +719,18 @@
             levels = levelData.map(createLevel);
             currentLevelData = levels[0];
             gameState = 'menu';
-            msgEl.innerHTML = '<h1>LEVEL DEVIL</h1><p>Arrow Keys / WASD to Move & Jump</p><p>Reach the DOOR to escape...</p><p class="blink">PRESS SPACE TO START</p>';
-            msgEl.classList.remove('hidden');
+            msgContent.innerHTML = '<h1>LEVEL DEVIL</h1><p>Touch controls or keyboard</p><p>Reach the DOOR to escape...</p><button class="start-btn" id="startBtn2">TAP TO START</button>';
+            msgOverlay.classList.remove('hidden');
+            touchControls.classList.add('hidden');
+
+            // Re-bind start button
+            setTimeout(() => {
+                const btn2 = document.getElementById('startBtn2');
+                if (btn2) {
+                    btn2.addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+                    btn2.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); startGame(); }, {passive: false});
+                }
+            }, 10);
         }
 
         function killPlayer() {
@@ -493,9 +743,23 @@
 
             setTimeout(() => {
                 gameState = 'dead';
-                msgEl.innerHTML = '<h1>YOU DIED</h1><p>The devil claims another soul.</p><p class="blink">PRESS SPACE TO RETRY</p>';
-                msgEl.classList.remove('hidden');
+                msgContent.innerHTML = '<h1>YOU DIED</h1><p>The devil claims another soul.</p><p class="blink">TAP TO RETRY</p>';
+                msgOverlay.classList.remove('hidden');
+                touchControls.classList.add('hidden');
             }, 500);
+        }
+
+        function createParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: 1,
+                    color,
+                    size: Math.random() * 4 + 2
+                });
+            }
         }
 
         function checkCollision(rect1, rect2) {
@@ -505,6 +769,7 @@
                    rect1.y + rect1.height > rect2.y;
         }
 
+        // ==================== UPDATE ====================
         function update() {
             if (gameState !== 'playing') return;
             frameCount++;
@@ -547,10 +812,8 @@
             // Platform collisions
             player.grounded = false;
 
-            // Normal platforms
             currentLevelData.platforms.forEach(plat => {
                 if (checkCollision(player, plat)) {
-                    // Determine side
                     const overlapX = Math.min(player.x + player.width - plat.x, plat.x + plat.w - player.x);
                     const overlapY = Math.min(player.y + player.height - plat.y, plat.y + plat.h - player.y);
 
@@ -571,7 +834,7 @@
                 }
             });
 
-            // Fake platforms - reveal when stepped on
+            // Fake platforms
             currentLevelData.fakePlatforms.forEach(plat => {
                 if (!plat.revealed && checkCollision(player, plat)) {
                     if (player.y + player.height > plat.y && player.y < plat.y + plat.h/2 && player.vy >= 0) {
@@ -580,11 +843,9 @@
                         playSound('trap');
                     }
                 }
-                if (plat.revealed) {
+                if (plat.revealed && plat.timer > 0) {
                     plat.timer--;
-                    if (plat.timer <= 0) {
-                        // Platform disappears
-                    } else if (checkCollision(player, plat)) {
+                    if (plat.timer > 0 && checkCollision(player, plat)) {
                         if (player.y < plat.y) {
                             player.y = plat.y - player.height;
                             player.vy = 0;
@@ -633,18 +894,14 @@
             // Spikes
             currentLevelData.spikes.forEach(spike => {
                 const spikeHitbox = { x: spike.x + 4, y: spike.y + 4, w: spike.w - 8, h: spike.h - 8 };
-                if (checkCollision(player, spikeHitbox)) {
-                    killPlayer();
-                }
+                if (checkCollision(player, spikeHitbox)) killPlayer();
             });
 
             // Hidden spikes
             currentLevelData.hiddenSpikes.forEach(spike => {
                 if (!spike.hidden) {
                     const spikeHitbox = { x: spike.x + 4, y: spike.y + 4, w: spike.w - 8, h: spike.h - 8 };
-                    if (checkCollision(player, spikeHitbox)) {
-                        killPlayer();
-                    }
+                    if (checkCollision(player, spikeHitbox)) killPlayer();
                 }
             });
 
@@ -653,7 +910,6 @@
                 if (!trig.activated && checkCollision(player, trig)) {
                     trig.activated = true;
                     playSound('trap');
-                    // Reveal hidden spikes
                     currentLevelData.hiddenSpikes.forEach(s => {
                         s.hidden = false;
                         createParticles(s.x + s.w/2, s.y, '#e94560', 6);
@@ -676,22 +932,22 @@
                     playSound('win');
                     gameState = 'levelComplete';
                     createParticles(player.x + player.width/2, player.y + player.height/2, '#0f0', 20);
-                    msgEl.innerHTML = '<h1>LEVEL CLEAR!</h1><p>The devil is not done with you yet...</p><p class="blink">PRESS SPACE TO CONTINUE</p>';
-                    msgEl.classList.remove('hidden');
+                    msgContent.innerHTML = '<h1>LEVEL CLEAR!</h1><p>The devil is not done with you yet...</p><p class="blink">TAP TO CONTINUE</p>';
+                    msgOverlay.classList.remove('hidden');
+                    touchControls.classList.add('hidden');
                 }
             });
 
-            // Camera follow
+            // Camera
             const targetCamX = player.x - canvas.width / 2 + player.width / 2;
             const targetCamY = player.y - canvas.height / 2 + player.height / 2;
             camera.x += (targetCamX - camera.x) * 0.1;
             camera.y += (targetCamY - camera.y) * 0.1;
 
-            // Clamp camera
             camera.x = Math.max(0, Math.min(camera.x, currentLevelData.width - canvas.width));
             camera.y = Math.max(0, Math.min(camera.y, currentLevelData.height - canvas.height));
 
-            // Update particles
+            // Particles
             particles = particles.filter(p => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -701,50 +957,40 @@
             });
         }
 
+        // ==================== DRAW ====================
         function draw() {
-            // Clear
             ctx.fillStyle = '#16213e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.save();
             ctx.translate(-Math.floor(camera.x), -Math.floor(camera.y));
 
-            // Draw grid background
+            // Grid
             ctx.strokeStyle = 'rgba(255,255,255,0.03)';
             ctx.lineWidth = 1;
             for (let x = 0; x < currentLevelData.width; x += TILE) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, currentLevelData.height);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, currentLevelData.height); ctx.stroke();
             }
             for (let y = 0; y < currentLevelData.height; y += TILE) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(currentLevelData.width, y);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(currentLevelData.width, y); ctx.stroke();
             }
 
-            // Draw platforms
+            // Platforms
             currentLevelData.platforms.forEach(plat => {
                 ctx.fillStyle = plat.type === 'ice' ? '#a8d8ea' : '#0f3460';
                 ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.strokeStyle = plat.type === 'ice' ? '#7ec8e3' : '#e94560';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
-
-                // Brick pattern
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
                 for (let i = 0; i < plat.w; i += 8) {
                     for (let j = 0; j < plat.h; j += 8) {
-                        if ((i + j) % 16 === 0) {
-                            ctx.fillRect(plat.x + i, plat.y + j, 4, 4);
-                        }
+                        if ((i + j) % 16 === 0) ctx.fillRect(plat.x + i, plat.y + j, 4, 4);
                     }
                 }
             });
 
-            // Draw fake platforms
+            // Fake platforms
             currentLevelData.fakePlatforms.forEach(plat => {
                 if (!plat.revealed) {
                     ctx.fillStyle = '#0f3460';
@@ -752,7 +998,6 @@
                     ctx.strokeStyle = '#e94560';
                     ctx.lineWidth = 2;
                     ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
-                    // Subtle X pattern
                     ctx.strokeStyle = 'rgba(233, 69, 96, 0.3)';
                     ctx.beginPath();
                     ctx.moveTo(plat.x + 4, plat.y + 4);
@@ -768,14 +1013,13 @@
                 }
             });
 
-            // Draw falling platforms
+            // Falling platforms
             currentLevelData.fallingPlatforms.forEach(plat => {
                 ctx.fillStyle = '#533483';
                 ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.strokeStyle = '#e94560';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
-                // Warning cracks
                 ctx.strokeStyle = 'rgba(233, 69, 96, 0.5)';
                 ctx.beginPath();
                 ctx.moveTo(plat.x + 8, plat.y + 8);
@@ -784,14 +1028,13 @@
                 ctx.stroke();
             });
 
-            // Draw moving platforms
+            // Moving platforms
             currentLevelData.movingPlatforms.forEach(plat => {
                 ctx.fillStyle = '#1a5f7a';
                 ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.strokeStyle = '#57c5b6';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
-                // Arrow
                 ctx.fillStyle = '#57c5b6';
                 ctx.beginPath();
                 ctx.moveTo(plat.x + plat.w/2, plat.y + 8);
@@ -800,7 +1043,7 @@
                 ctx.fill();
             });
 
-            // Draw spikes
+            // Spikes
             ctx.fillStyle = '#e94560';
             currentLevelData.spikes.forEach(spike => {
                 const spikeCount = Math.floor(spike.w / 8);
@@ -813,7 +1056,7 @@
                 }
             });
 
-            // Draw hidden spikes
+            // Hidden spikes
             currentLevelData.hiddenSpikes.forEach(spike => {
                 if (!spike.hidden) {
                     ctx.fillStyle = '#e94560';
@@ -828,7 +1071,7 @@
                 }
             });
 
-            // Draw triggers
+            // Triggers
             currentLevelData.triggers.forEach(trig => {
                 ctx.fillStyle = trig.activated ? '#e94560' : '#ffd700';
                 ctx.fillRect(trig.x + 8, trig.y + 8, 16, 16);
@@ -843,7 +1086,7 @@
                 }
             });
 
-            // Draw coins
+            // Coins
             currentLevelData.coins.forEach(coin => {
                 if (!coin.collected) {
                     ctx.fillStyle = '#ffd700';
@@ -856,45 +1099,40 @@
                 }
             });
 
-            // Draw door
+            // Door
             currentLevelData.doors.forEach(door => {
                 ctx.fillStyle = '#2d6a4f';
                 ctx.fillRect(door.x, door.y, door.w, door.h);
                 ctx.strokeStyle = '#52b788';
                 ctx.lineWidth = 3;
                 ctx.strokeRect(door.x, door.y, door.w, door.h);
-                // Door frame
                 ctx.fillStyle = '#1b4332';
                 ctx.fillRect(door.x + 4, door.y + 4, door.w - 8, door.h - 4);
-                // Handle
                 ctx.fillStyle = '#ffd700';
                 ctx.beginPath();
                 ctx.arc(door.x + door.w - 8, door.y + door.h/2, 3, 0, Math.PI * 2);
                 ctx.fill();
-                // Glow
                 ctx.shadowColor = '#52b788';
                 ctx.shadowBlur = 20;
                 ctx.strokeRect(door.x, door.y, door.w, door.h);
                 ctx.shadowBlur = 0;
             });
 
-            // Draw player
+            // Player
             if (!player.dead) {
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(player.x, player.y, player.width, player.height);
-                // Eyes
                 ctx.fillStyle = '#000';
                 const eyeOffset = player.facing === 1 ? 4 : -4;
                 ctx.fillRect(player.x + 6 + eyeOffset, player.y + 6, 4, 4);
                 ctx.fillRect(player.x + 14 + eyeOffset, player.y + 6, 4, 4);
-                // Sweat drop when near danger
                 ctx.fillStyle = '#a8d8ea';
                 ctx.beginPath();
                 ctx.arc(player.x + (player.facing === 1 ? 2 : 22), player.y + 4, 2, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // Draw particles
+            // Particles
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
@@ -904,7 +1142,7 @@
 
             ctx.restore();
 
-            // Vignette effect
+            // Vignette
             const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height/3, canvas.width/2, canvas.height/2, canvas.height);
             gradient.addColorStop(0, 'rgba(0,0,0,0)');
             gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
@@ -912,6 +1150,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
+        // ==================== GAME LOOP ====================
         function gameLoop() {
             if (gameState === 'menu' || gameState === 'gameComplete') return;
             update();
@@ -921,6 +1160,13 @@
 
         // Initial draw
         draw();
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && gameState === 'playing') {
+                // Pause not implemented, but could be added
+            }
+        });
     </script>
 </body>
 </html>
