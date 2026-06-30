@@ -47,7 +47,6 @@
             image-rendering: crisp-edges;
         }
 
-        /* Touch Controls */
         #touchControls {
             position: absolute;
             bottom: 0;
@@ -82,6 +81,7 @@
             transition: all 0.1s;
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
+            cursor: pointer;
         }
 
         .touch-btn:active, .touch-btn.pressed {
@@ -103,7 +103,6 @@
             border-color: #52b788;
         }
 
-        /* UI Overlay */
         #ui {
             position: absolute;
             top: 10px;
@@ -120,7 +119,6 @@
             color: #e94560;
         }
 
-        /* Message Overlay */
         #messageOverlay {
             position: absolute;
             top: 0;
@@ -176,6 +174,7 @@
             font-size: 12px;
             pointer-events: auto;
             animation: pulse 1.5s infinite;
+            cursor: pointer;
         }
 
         .start-btn:active {
@@ -195,7 +194,6 @@
 
         .hidden { display: none !important; }
 
-        /* Fullscreen toggle */
         #fullscreenBtn {
             position: absolute;
             top: 10px;
@@ -212,13 +210,13 @@
             align-items: center;
             z-index: 60;
             pointer-events: auto;
+            cursor: pointer;
         }
 
         #fullscreenBtn:active {
             background: rgba(233, 69, 96, 0.3);
         }
 
-        /* Orientation warning */
         #orientationWarning {
             position: absolute;
             top: 0;
@@ -260,12 +258,12 @@
             <div class="deaths">DEATHS: <span id="deathCount">0</span></div>
         </div>
 
-        <button id="fullscreenBtn">⛶</button>
+        <button id="fullscreenBtn">&#9974;</button>
 
         <div id="touchControls" class="hidden">
             <div class="control-group">
-                <div class="touch-btn" data-key="ArrowLeft">◄</div>
-                <div class="touch-btn" data-key="ArrowRight">►</div>
+                <div class="touch-btn" data-key="ArrowLeft">&#9664;</div>
+                <div class="touch-btn" data-key="ArrowRight">&#9654;</div>
             </div>
             <div class="control-group">
                 <div class="touch-btn jump-btn" data-key="Space">JUMP</div>
@@ -294,7 +292,7 @@
         const startBtn = document.getElementById('startBtn');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-        // Responsive canvas sizing
+        // Responsive canvas
         const GAME_WIDTH = 800;
         const GAME_HEIGHT = 480;
 
@@ -302,7 +300,6 @@
             const wrapper = document.getElementById('gameWrapper');
             const aspect = GAME_WIDTH / GAME_HEIGHT;
             const wrapperAspect = wrapper.clientWidth / wrapper.clientHeight;
-
             let w, h;
             if (wrapperAspect > aspect) {
                 h = wrapper.clientHeight;
@@ -311,23 +308,23 @@
                 w = wrapper.clientWidth;
                 h = w / aspect;
             }
-
             canvas.style.width = w + 'px';
             canvas.style.height = h + 'px';
             canvas.width = GAME_WIDTH;
             canvas.height = GAME_HEIGHT;
         }
-
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         // Fullscreen
-        fullscreenBtn.addEventListener('click', () => {
+        fullscreenBtn.addEventListener('click', function() {
             const el = document.documentElement;
             if (!document.fullscreenElement) {
-                el.requestFullscreen?.() || el.webkitRequestFullscreen?.();
+                if (el.requestFullscreen) el.requestFullscreen();
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
             } else {
-                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
         });
 
@@ -341,8 +338,8 @@
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-
             const now = audioCtx.currentTime;
+
             if (type === 'jump') {
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(300, now);
@@ -378,73 +375,76 @@
                 osc.stop(now + 0.15);
             }
 
-            // Haptic feedback
-            if (navigator.vibrate) navigator.vibrate(type === 'die' ? [50, 30, 50] : 15);
+            if (navigator.vibrate) {
+                if (type === 'die') navigator.vibrate([50, 30, 50]);
+                else navigator.vibrate(15);
+            }
         }
 
         // ==================== INPUT ====================
         const keys = {};
 
-        // Keyboard
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', function(e) {
             keys[e.code] = true;
             handleAction(e.code);
         });
-        document.addEventListener('keyup', (e) => {
+        document.addEventListener('keyup', function(e) {
             keys[e.code] = false;
         });
 
         // Touch controls
         const touchBtns = document.querySelectorAll('.touch-btn');
-        touchBtns.forEach(btn => {
+        touchBtns.forEach(function(btn) {
             const key = btn.dataset.key;
 
-            const start = (e) => {
-                e.preventDefault();
+            function startHandler(e) {
+                if (e.preventDefault) e.preventDefault();
                 keys[key] = true;
                 btn.classList.add('pressed');
                 handleAction(key);
-            };
-            const end = (e) => {
-                e.preventDefault();
+            }
+            function endHandler(e) {
+                if (e.preventDefault) e.preventDefault();
                 keys[key] = false;
                 btn.classList.remove('pressed');
-            };
+            }
 
-            btn.addEventListener('touchstart', start, {passive: false});
-            btn.addEventListener('touchend', end, {passive: false});
-            btn.addEventListener('touchcancel', end, {passive: false});
-            btn.addEventListener('mousedown', start);
-            btn.addEventListener('mouseup', end);
-            btn.addEventListener('mouseleave', end);
+            btn.addEventListener('touchstart', startHandler, {passive: false});
+            btn.addEventListener('touchend', endHandler, {passive: false});
+            btn.addEventListener('touchcancel', endHandler, {passive: false});
+            btn.addEventListener('mousedown', startHandler);
+            btn.addEventListener('mouseup', endHandler);
+            btn.addEventListener('mouseleave', endHandler);
         });
 
         function handleAction(code) {
-            if (gameState === 'menu' && (code === 'Space' || code === 'Enter')) {
+            if (gameState === 'menu' && (code === 'Space' || code === 'Enter' || code === 'ArrowUp')) {
                 startGame();
-            } else if (gameState === 'dead' && (code === 'Space' || code === 'Enter')) {
+            } else if (gameState === 'dead' && (code === 'Space' || code === 'Enter' || code === 'ArrowUp')) {
                 restartLevel();
-            } else if (gameState === 'levelComplete' && (code === 'Space' || code === 'Enter')) {
+            } else if (gameState === 'levelComplete' && (code === 'Space' || code === 'Enter' || code === 'ArrowUp')) {
                 nextLevel();
-            } else if (gameState === 'gameComplete' && (code === 'Space' || code === 'Enter')) {
+            } else if (gameState === 'gameComplete' && (code === 'Space' || code === 'Enter' || code === 'ArrowUp')) {
                 resetGame();
             }
         }
 
-        startBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+        // Start button handlers
+        function onStartClick(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
             startGame();
-        });
-        startBtn.addEventListener('touchstart', (e) => {
+        }
+        startBtn.addEventListener('click', onStartClick);
+        startBtn.addEventListener('touchstart', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            startGame();
+            onStartClick();
         }, {passive: false});
 
-        // Prevent default touch behaviors
-        document.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
-        document.addEventListener('gesturestart', (e) => e.preventDefault());
-        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        // Prevent default behaviors
+        document.addEventListener('touchmove', function(e) { e.preventDefault(); }, {passive: false});
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+        document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
 
         // ==================== GAME STATE ====================
         let gameState = 'menu';
@@ -453,6 +453,7 @@
         let frameCount = 0;
         let camera = { x: 0, y: 0 };
         let particles = [];
+        let animFrameId = null;
 
         let player = {
             x: 50, y: 300,
@@ -470,44 +471,44 @@
 
         // ==================== LEVELS ====================
         function createLevel(data) {
-            const platforms = [];
-            const spikes = [];
-            const fakePlatforms = [];
-            const fallingPlatforms = [];
-            const movingPlatforms = [];
-            const doors = [];
-            const triggers = [];
-            const hiddenSpikes = [];
-            const coins = [];
+            var platforms = [];
+            var spikes = [];
+            var fakePlatforms = [];
+            var fallingPlatforms = [];
+            var movingPlatforms = [];
+            var doors = [];
+            var triggers = [];
+            var hiddenSpikes = [];
+            var coins = [];
 
-            const rows = data.map;
-            for (let row = 0; row < rows.length; row++) {
-                for (let col = 0; col < rows[row].length; col++) {
-                    const char = rows[row][col];
-                    const x = col * TILE;
-                    const y = row * TILE;
+            var rows = data.map;
+            for (var row = 0; row < rows.length; row++) {
+                for (var col = 0; col < rows[row].length; col++) {
+                    var ch = rows[row][col];
+                    var x = col * TILE;
+                    var y = row * TILE;
 
-                    if (char === '#') platforms.push({ x, y, w: TILE, h: TILE, type: 'normal' });
-                    if (char === '=') platforms.push({ x, y, w: TILE, h: TILE, type: 'ice' });
-                    if (char === '^') spikes.push({ x, y: y + 16, w: TILE, h: 16 });
-                    if (char === 'v') spikes.push({ x, y, w: TILE, h: 16 });
-                    if (char === '<') spikes.push({ x: x + 16, y, w: 16, h: TILE });
-                    if (char === '>') spikes.push({ x, y, w: 16, h: TILE });
-                    if (char === 'F') fakePlatforms.push({ x, y, w: TILE, h: TILE, revealed: false, timer: 0 });
-                    if (char === 'D') fallingPlatforms.push({ x, y, w: TILE, h: TILE, falling: false, vy: 0, originalY: y });
-                    if (char === 'M') movingPlatforms.push({ x, y, w: TILE * 2, h: TILE, startX: x, endX: x + TILE * 4, speed: 1, dir: 1 });
-                    if (char === 'O') doors.push({ x, y, w: TILE, h: TILE * 1.5 });
-                    if (char === 'T') triggers.push({ x, y, w: TILE, h: TILE, activated: false, target: 'spikes' });
-                    if (char === 'H') hiddenSpikes.push({ x, y: y + 20, w: TILE, h: 12, hidden: true });
-                    if (char === 'C') coins.push({ x: x + 8, y: y + 8, w: 16, h: 16, collected: false });
-                    if (char === '@') { player.respawnX = x; player.respawnY = y; }
+                    if (ch === '#') platforms.push({ x: x, y: y, w: TILE, h: TILE, type: 'normal' });
+                    if (ch === '=') platforms.push({ x: x, y: y, w: TILE, h: TILE, type: 'ice' });
+                    if (ch === '^') spikes.push({ x: x, y: y + 16, w: TILE, h: 16 });
+                    if (ch === 'v') spikes.push({ x: x, y: y, w: TILE, h: 16 });
+                    if (ch === '<') spikes.push({ x: x + 16, y: y, w: 16, h: TILE });
+                    if (ch === '>') spikes.push({ x: x, y: y, w: 16, h: TILE });
+                    if (ch === 'F') fakePlatforms.push({ x: x, y: y, w: TILE, h: TILE, revealed: false, timer: 0 });
+                    if (ch === 'D') fallingPlatforms.push({ x: x, y: y, w: TILE, h: TILE, falling: false, vy: 0, originalY: y });
+                    if (ch === 'M') movingPlatforms.push({ x: x, y: y, w: TILE * 2, h: TILE, startX: x, endX: x + TILE * 4, speed: 1, dir: 1 });
+                    if (ch === 'O') doors.push({ x: x, y: y, w: TILE, h: TILE * 1.5 });
+                    if (ch === 'T') triggers.push({ x: x, y: y, w: TILE, h: TILE, activated: false, target: 'spikes' });
+                    if (ch === 'H') hiddenSpikes.push({ x: x, y: y + 20, w: TILE, h: 12, hidden: true });
+                    if (ch === 'C') coins.push({ x: x + 8, y: y + 8, w: 16, h: 16, collected: false });
+                    if (ch === '@') { player.respawnX = x; player.respawnY = y; }
                 }
             }
 
-            return { platforms, spikes, fakePlatforms, fallingPlatforms, movingPlatforms, doors, triggers, hiddenSpikes, coins, width: rows[0].length * TILE, height: rows.length * TILE };
+            return { platforms: platforms, spikes: spikes, fakePlatforms: fakePlatforms, fallingPlatforms: fallingPlatforms, movingPlatforms: movingPlatforms, doors: doors, triggers: triggers, hiddenSpikes: hiddenSpikes, coins: coins, width: rows[0].length * TILE, height: rows.length * TILE };
         }
 
-        const levelData = [
+        var levelData = [
             {
                 map: [
                     "####################",
@@ -662,16 +663,21 @@
             }
         ];
 
-        let levels = levelData.map(createLevel);
-        let currentLevelData = levels[0];
+        var levels = [];
+        for (var i = 0; i < levelData.length; i++) {
+            levels.push(createLevel(levelData[i]));
+        }
+        var currentLevelData = levels[0];
 
         // ==================== GAME FUNCTIONS ====================
         function startGame() {
+            if (gameState === 'playing') return;
             gameState = 'playing';
             msgOverlay.classList.add('hidden');
             touchControls.classList.remove('hidden');
             resetPlayer();
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (animFrameId) cancelAnimationFrame(animFrameId);
             gameLoop();
         }
 
@@ -687,12 +693,24 @@
         function restartLevel() {
             gameState = 'playing';
             msgOverlay.classList.add('hidden');
+            touchControls.classList.remove('hidden');
             resetPlayer();
             currentLevelData = levels[currentLevel];
-            currentLevelData.fakePlatforms.forEach(p => { p.revealed = false; p.timer = 0; });
-            currentLevelData.fallingPlatforms.forEach(p => { p.falling = false; p.vy = 0; p.y = p.originalY; });
-            currentLevelData.triggers.forEach(t => t.activated = false);
-            currentLevelData.hiddenSpikes.forEach(s => s.hidden = true);
+            for (var i = 0; i < currentLevelData.fakePlatforms.length; i++) {
+                currentLevelData.fakePlatforms[i].revealed = false;
+                currentLevelData.fakePlatforms[i].timer = 0;
+            }
+            for (var i = 0; i < currentLevelData.fallingPlatforms.length; i++) {
+                currentLevelData.fallingPlatforms[i].falling = false;
+                currentLevelData.fallingPlatforms[i].vy = 0;
+                currentLevelData.fallingPlatforms[i].y = currentLevelData.fallingPlatforms[i].originalY;
+            }
+            for (var i = 0; i < currentLevelData.triggers.length; i++) {
+                currentLevelData.triggers[i].activated = false;
+            }
+            for (var i = 0; i < currentLevelData.hiddenSpikes.length; i++) {
+                currentLevelData.hiddenSpikes[i].hidden = true;
+            }
         }
 
         function nextLevel() {
@@ -708,27 +726,30 @@
             levelEl.textContent = currentLevel + 1;
             gameState = 'playing';
             msgOverlay.classList.add('hidden');
+            touchControls.classList.remove('hidden');
             resetPlayer();
         }
 
         function resetGame() {
             currentLevel = 0;
             deaths = 0;
-            deathEl.textContent = 0;
-            levelEl.textContent = 1;
-            levels = levelData.map(createLevel);
+            deathEl.textContent = '0';
+            levelEl.textContent = '1';
+            levels = [];
+            for (var i = 0; i < levelData.length; i++) {
+                levels.push(createLevel(levelData[i]));
+            }
             currentLevelData = levels[0];
             gameState = 'menu';
             msgContent.innerHTML = '<h1>LEVEL DEVIL</h1><p>Touch controls or keyboard</p><p>Reach the DOOR to escape...</p><button class="start-btn" id="startBtn2">TAP TO START</button>';
             msgOverlay.classList.remove('hidden');
             touchControls.classList.add('hidden');
 
-            // Re-bind start button
-            setTimeout(() => {
-                const btn2 = document.getElementById('startBtn2');
+            setTimeout(function() {
+                var btn2 = document.getElementById('startBtn2');
                 if (btn2) {
-                    btn2.addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
-                    btn2.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); startGame(); }, {passive: false});
+                    btn2.addEventListener('click', function(e) { e.stopPropagation(); startGame(); });
+                    btn2.addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); startGame(); }, {passive: false});
                 }
             }, 10);
         }
@@ -741,7 +762,7 @@
             playSound('die');
             createParticles(player.x + player.width/2, player.y + player.height/2, '#e94560', 15);
 
-            setTimeout(() => {
+            setTimeout(function() {
                 gameState = 'dead';
                 msgContent.innerHTML = '<h1>YOU DIED</h1><p>The devil claims another soul.</p><p class="blink">TAP TO RETRY</p>';
                 msgOverlay.classList.remove('hidden');
@@ -749,14 +770,15 @@
             }, 500);
         }
 
-        function createParticles(x, y, color, count = 8) {
-            for (let i = 0; i < count; i++) {
+        function createParticles(x, y, color, count) {
+            count = count || 8;
+            for (var i = 0; i < count; i++) {
                 particles.push({
-                    x, y,
+                    x: x, y: y,
                     vx: (Math.random() - 0.5) * 6,
                     vy: (Math.random() - 0.5) * 6,
                     life: 1,
-                    color,
+                    color: color,
                     size: Math.random() * 4 + 2
                 });
             }
@@ -774,13 +796,12 @@
             if (gameState !== 'playing') return;
             frameCount++;
 
-            // Player movement
-            let moveSpeed = player.speed;
+            // Movement
             if (keys['ArrowLeft'] || keys['KeyA']) {
-                player.vx = -moveSpeed;
+                player.vx = -player.speed;
                 player.facing = -1;
             } else if (keys['ArrowRight'] || keys['KeyD']) {
-                player.vx = moveSpeed;
+                player.vx = player.speed;
                 player.facing = 1;
             } else {
                 player.vx *= 0.8;
@@ -812,10 +833,11 @@
             // Platform collisions
             player.grounded = false;
 
-            currentLevelData.platforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.platforms.length; i++) {
+                var plat = currentLevelData.platforms[i];
                 if (checkCollision(player, plat)) {
-                    const overlapX = Math.min(player.x + player.width - plat.x, plat.x + plat.w - player.x);
-                    const overlapY = Math.min(player.y + player.height - plat.y, plat.y + plat.h - player.y);
+                    var overlapX = Math.min(player.x + player.width - plat.x, plat.x + plat.w - player.x);
+                    var overlapY = Math.min(player.y + player.height - plat.y, plat.y + plat.h - player.y);
 
                     if (overlapX < overlapY) {
                         if (player.x < plat.x) player.x = plat.x - player.width;
@@ -832,10 +854,11 @@
                         }
                     }
                 }
-            });
+            }
 
             // Fake platforms
-            currentLevelData.fakePlatforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.fakePlatforms.length; i++) {
+                var plat = currentLevelData.fakePlatforms[i];
                 if (!plat.revealed && checkCollision(player, plat)) {
                     if (player.y + player.height > plat.y && player.y < plat.y + plat.h/2 && player.vy >= 0) {
                         plat.revealed = true;
@@ -853,10 +876,11 @@
                         }
                     }
                 }
-            });
+            }
 
             // Falling platforms
-            currentLevelData.fallingPlatforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.fallingPlatforms.length; i++) {
+                var plat = currentLevelData.fallingPlatforms[i];
                 if (!plat.falling && checkCollision(player, plat)) {
                     if (player.y + player.height > plat.y && player.y < plat.y + 5 && player.vy >= 0) {
                         plat.falling = true;
@@ -874,10 +898,11 @@
                         player.grounded = true;
                     }
                 }
-            });
+            }
 
             // Moving platforms
-            currentLevelData.movingPlatforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.movingPlatforms.length; i++) {
+                var plat = currentLevelData.movingPlatforms[i];
                 plat.x += plat.speed * plat.dir;
                 if (plat.x > plat.endX || plat.x < plat.startX) plat.dir *= -1;
 
@@ -889,45 +914,56 @@
                         player.x += plat.speed * plat.dir;
                     }
                 }
-            });
+            }
 
             // Spikes
-            currentLevelData.spikes.forEach(spike => {
-                const spikeHitbox = { x: spike.x + 4, y: spike.y + 4, w: spike.w - 8, h: spike.h - 8 };
-                if (checkCollision(player, spikeHitbox)) killPlayer();
-            });
+            for (var i = 0; i < currentLevelData.spikes.length; i++) {
+                var spike = currentLevelData.spikes[i];
+                var spikeHitbox = { x: spike.x + 4, y: spike.y + 4, w: spike.w - 8, h: spike.h - 8 };
+                if (checkCollision(player, spikeHitbox)) {
+                    killPlayer();
+                    return;
+                }
+            }
 
             // Hidden spikes
-            currentLevelData.hiddenSpikes.forEach(spike => {
+            for (var i = 0; i < currentLevelData.hiddenSpikes.length; i++) {
+                var spike = currentLevelData.hiddenSpikes[i];
                 if (!spike.hidden) {
-                    const spikeHitbox = { x: spike.x + 4, y: spike.y + 4, w: spike.w - 8, h: spike.h - 8 };
-                    if (checkCollision(player, spikeHitbox)) killPlayer();
+                    var spikeHitbox = { x: spike.x + 4, y: spike.y + 4, w: spike.w - 8, h: spike.h - 8 };
+                    if (checkCollision(player, spikeHitbox)) {
+                        killPlayer();
+                        return;
+                    }
                 }
-            });
+            }
 
             // Triggers
-            currentLevelData.triggers.forEach(trig => {
+            for (var i = 0; i < currentLevelData.triggers.length; i++) {
+                var trig = currentLevelData.triggers[i];
                 if (!trig.activated && checkCollision(player, trig)) {
                     trig.activated = true;
                     playSound('trap');
-                    currentLevelData.hiddenSpikes.forEach(s => {
-                        s.hidden = false;
-                        createParticles(s.x + s.w/2, s.y, '#e94560', 6);
-                    });
+                    for (var j = 0; j < currentLevelData.hiddenSpikes.length; j++) {
+                        currentLevelData.hiddenSpikes[j].hidden = false;
+                        createParticles(currentLevelData.hiddenSpikes[j].x + currentLevelData.hiddenSpikes[j].w/2, currentLevelData.hiddenSpikes[j].y, '#e94560', 6);
+                    }
                 }
-            });
+            }
 
             // Coins
-            currentLevelData.coins.forEach(coin => {
+            for (var i = 0; i < currentLevelData.coins.length; i++) {
+                var coin = currentLevelData.coins[i];
                 if (!coin.collected && checkCollision(player, coin)) {
                     coin.collected = true;
                     playSound('win');
                     createParticles(coin.x + 8, coin.y + 8, '#ffd700', 6);
                 }
-            });
+            }
 
             // Door
-            currentLevelData.doors.forEach(door => {
+            for (var i = 0; i < currentLevelData.doors.length; i++) {
+                var door = currentLevelData.doors[i];
                 if (checkCollision(player, door)) {
                     playSound('win');
                     gameState = 'levelComplete';
@@ -936,11 +972,11 @@
                     msgOverlay.classList.remove('hidden');
                     touchControls.classList.add('hidden');
                 }
-            });
+            }
 
             // Camera
-            const targetCamX = player.x - canvas.width / 2 + player.width / 2;
-            const targetCamY = player.y - canvas.height / 2 + player.height / 2;
+            var targetCamX = player.x - canvas.width / 2 + player.width / 2;
+            var targetCamY = player.y - canvas.height / 2 + player.height / 2;
             camera.x += (targetCamX - camera.x) * 0.1;
             camera.y += (targetCamY - camera.y) * 0.1;
 
@@ -948,13 +984,16 @@
             camera.y = Math.max(0, Math.min(camera.y, currentLevelData.height - canvas.height));
 
             // Particles
-            particles = particles.filter(p => {
+            var newParticles = [];
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
                 p.vy += 0.2;
                 p.life -= 0.02;
-                return p.life > 0;
-            });
+                if (p.life > 0) newParticles.push(p);
+            }
+            particles = newParticles;
         }
 
         // ==================== DRAW ====================
@@ -968,30 +1007,32 @@
             // Grid
             ctx.strokeStyle = 'rgba(255,255,255,0.03)';
             ctx.lineWidth = 1;
-            for (let x = 0; x < currentLevelData.width; x += TILE) {
+            for (var x = 0; x < currentLevelData.width; x += TILE) {
                 ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, currentLevelData.height); ctx.stroke();
             }
-            for (let y = 0; y < currentLevelData.height; y += TILE) {
+            for (var y = 0; y < currentLevelData.height; y += TILE) {
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(currentLevelData.width, y); ctx.stroke();
             }
 
             // Platforms
-            currentLevelData.platforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.platforms.length; i++) {
+                var plat = currentLevelData.platforms[i];
                 ctx.fillStyle = plat.type === 'ice' ? '#a8d8ea' : '#0f3460';
                 ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.strokeStyle = plat.type === 'ice' ? '#7ec8e3' : '#e94560';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                for (let i = 0; i < plat.w; i += 8) {
-                    for (let j = 0; j < plat.h; j += 8) {
-                        if ((i + j) % 16 === 0) ctx.fillRect(plat.x + i, plat.y + j, 4, 4);
+                for (var j = 0; j < plat.w; j += 8) {
+                    for (var k = 0; k < plat.h; k += 8) {
+                        if ((j + k) % 16 === 0) ctx.fillRect(plat.x + j, plat.y + k, 4, 4);
                     }
                 }
-            });
+            }
 
             // Fake platforms
-            currentLevelData.fakePlatforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.fakePlatforms.length; i++) {
+                var plat = currentLevelData.fakePlatforms[i];
                 if (!plat.revealed) {
                     ctx.fillStyle = '#0f3460';
                     ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
@@ -1011,10 +1052,11 @@
                     ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                     ctx.globalAlpha = 1;
                 }
-            });
+            }
 
             // Falling platforms
-            currentLevelData.fallingPlatforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.fallingPlatforms.length; i++) {
+                var plat = currentLevelData.fallingPlatforms[i];
                 ctx.fillStyle = '#533483';
                 ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.strokeStyle = '#e94560';
@@ -1026,10 +1068,11 @@
                 ctx.lineTo(plat.x + 16, plat.y + 16);
                 ctx.lineTo(plat.x + 24, plat.y + 10);
                 ctx.stroke();
-            });
+            }
 
             // Moving platforms
-            currentLevelData.movingPlatforms.forEach(plat => {
+            for (var i = 0; i < currentLevelData.movingPlatforms.length; i++) {
+                var plat = currentLevelData.movingPlatforms[i];
                 ctx.fillStyle = '#1a5f7a';
                 ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
                 ctx.strokeStyle = '#57c5b6';
@@ -1041,38 +1084,41 @@
                 ctx.lineTo(plat.x + plat.w/2 - 4, plat.y + 20);
                 ctx.lineTo(plat.x + plat.w/2 + 4, plat.y + 20);
                 ctx.fill();
-            });
+            }
 
             // Spikes
             ctx.fillStyle = '#e94560';
-            currentLevelData.spikes.forEach(spike => {
-                const spikeCount = Math.floor(spike.w / 8);
-                for (let i = 0; i < spikeCount; i++) {
+            for (var i = 0; i < currentLevelData.spikes.length; i++) {
+                var spike = currentLevelData.spikes[i];
+                var spikeCount = Math.floor(spike.w / 8);
+                for (var j = 0; j < spikeCount; j++) {
                     ctx.beginPath();
-                    ctx.moveTo(spike.x + i * 8, spike.y + spike.h);
-                    ctx.lineTo(spike.x + i * 8 + 4, spike.y);
-                    ctx.lineTo(spike.x + i * 8 + 8, spike.y + spike.h);
+                    ctx.moveTo(spike.x + j * 8, spike.y + spike.h);
+                    ctx.lineTo(spike.x + j * 8 + 4, spike.y);
+                    ctx.lineTo(spike.x + j * 8 + 8, spike.y + spike.h);
                     ctx.fill();
                 }
-            });
+            }
 
             // Hidden spikes
-            currentLevelData.hiddenSpikes.forEach(spike => {
+            for (var i = 0; i < currentLevelData.hiddenSpikes.length; i++) {
+                var spike = currentLevelData.hiddenSpikes[i];
                 if (!spike.hidden) {
                     ctx.fillStyle = '#e94560';
-                    const spikeCount = Math.floor(spike.w / 8);
-                    for (let i = 0; i < spikeCount; i++) {
+                    var spikeCount = Math.floor(spike.w / 8);
+                    for (var j = 0; j < spikeCount; j++) {
                         ctx.beginPath();
-                        ctx.moveTo(spike.x + i * 8, spike.y + spike.h);
-                        ctx.lineTo(spike.x + i * 8 + 4, spike.y);
-                        ctx.lineTo(spike.x + i * 8 + 8, spike.y + spike.h);
+                        ctx.moveTo(spike.x + j * 8, spike.y + spike.h);
+                        ctx.lineTo(spike.x + j * 8 + 4, spike.y);
+                        ctx.lineTo(spike.x + j * 8 + 8, spike.y + spike.h);
                         ctx.fill();
                     }
                 }
-            });
+            }
 
             // Triggers
-            currentLevelData.triggers.forEach(trig => {
+            for (var i = 0; i < currentLevelData.triggers.length; i++) {
+                var trig = currentLevelData.triggers[i];
                 ctx.fillStyle = trig.activated ? '#e94560' : '#ffd700';
                 ctx.fillRect(trig.x + 8, trig.y + 8, 16, 16);
                 ctx.strokeStyle = '#fff';
@@ -1084,10 +1130,11 @@
                     ctx.textAlign = 'center';
                     ctx.fillText('?', trig.x + 16, trig.y + 21);
                 }
-            });
+            }
 
             // Coins
-            currentLevelData.coins.forEach(coin => {
+            for (var i = 0; i < currentLevelData.coins.length; i++) {
+                var coin = currentLevelData.coins[i];
                 if (!coin.collected) {
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
@@ -1097,10 +1144,11 @@
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 }
-            });
+            }
 
             // Door
-            currentLevelData.doors.forEach(door => {
+            for (var i = 0; i < currentLevelData.doors.length; i++) {
+                var door = currentLevelData.doors[i];
                 ctx.fillStyle = '#2d6a4f';
                 ctx.fillRect(door.x, door.y, door.w, door.h);
                 ctx.strokeStyle = '#52b788';
@@ -1116,14 +1164,14 @@
                 ctx.shadowBlur = 20;
                 ctx.strokeRect(door.x, door.y, door.w, door.h);
                 ctx.shadowBlur = 0;
-            });
+            }
 
             // Player
             if (!player.dead) {
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(player.x, player.y, player.width, player.height);
                 ctx.fillStyle = '#000';
-                const eyeOffset = player.facing === 1 ? 4 : -4;
+                var eyeOffset = player.facing === 1 ? 4 : -4;
                 ctx.fillRect(player.x + 6 + eyeOffset, player.y + 6, 4, 4);
                 ctx.fillRect(player.x + 14 + eyeOffset, player.y + 6, 4, 4);
                 ctx.fillStyle = '#a8d8ea';
@@ -1133,17 +1181,18 @@
             }
 
             // Particles
-            particles.forEach(p => {
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
                 ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
                 ctx.fillRect(p.x, p.y, p.size, p.size);
-            });
+            }
             ctx.globalAlpha = 1;
 
             ctx.restore();
 
             // Vignette
-            const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height/3, canvas.width/2, canvas.height/2, canvas.height);
+            var gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height/3, canvas.width/2, canvas.height/2, canvas.height);
             gradient.addColorStop(0, 'rgba(0,0,0,0)');
             gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
             ctx.fillStyle = gradient;
@@ -1155,18 +1204,11 @@
             if (gameState === 'menu' || gameState === 'gameComplete') return;
             update();
             draw();
-            requestAnimationFrame(gameLoop);
+            animFrameId = requestAnimationFrame(gameLoop);
         }
 
         // Initial draw
         draw();
-
-        // Handle visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && gameState === 'playing') {
-                // Pause not implemented, but could be added
-            }
-        });
     </script>
 </body>
 </html>
